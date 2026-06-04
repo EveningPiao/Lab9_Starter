@@ -8,9 +8,13 @@
   <title>Lab 9 - JS Debugging & Error Handling</title>
 
   <!-- Step 5: TrackJS Error Monitoring -->
-  <!-- Sign up at https://trackjs.com and replace YOUR_TOKEN with your actual token -->
-  <script type="text/javascript">window._trackJs = { token: "cb4af746d21d4db88ea79c024255b2f1" };</script>
-  <script type="text/javascript" src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
+  <script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
+  <script>
+    window.TrackJS && TrackJS.install({
+      token: "cb4af746d21d4db88ea79c024255b2f1",
+      application: "lab9"
+    });
+  </script>
 
   <style>
     body {
