@@ -5,9 +5,19 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lab 9</title>
+  <title>Lab 9 - JS Debugging & Error Handling</title>
+
+  <!-- Step 5: TrackJS Error Monitoring -->
+  <!-- Sign up at https://trackjs.com and replace YOUR_TOKEN with your actual token -->
+  <script type="text/javascript">window._trackJs = { token: "cb4af746d21d4db88ea79c024255b2f1" };</script>
+  <script type="text/javascript" src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
 
   <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+
     button {
       margin: 3px;
     }
@@ -30,6 +40,11 @@
       width: 240px;
     }
 
+    output.error-output {
+      border-color: red;
+      color: red;
+    }
+
     main {
       width: 800px;
     }
@@ -42,66 +57,240 @@
       row-gap: 5px;
     }
 
-    #error-btns>* {
+    #error-btns > * {
       padding: 8px 2px;
-      width: 122px;
+      width: 160px;
+    }
+
+    h2 {
+      margin-top: 30px;
     }
   </style>
 </head>
 
 <body>
   <main>
-    <form>
+    <h1>Lab 9 – JS Error Handling Demo</h1>
+
+    <form id="calc-form">
       <fieldset>
         <legend>Error Calculator</legend>
-        <input name="first-num" id="first-num" />
+        <input name="first-num" id="first-num" placeholder="num" />
         <select name="operator" id="operator">
           <option>+</option>
           <option>-</option>
           <option>*</option>
           <option>/</option>
         </select>
-        <input name="second-num" id="second-num" />
+        <input name="second-num" id="second-num" placeholder="num" />
         <button id="calculate">Calculate</button>
         <br />
-        <output></output>
+        <output id="calc-output"></output>
       </fieldset>
     </form>
 
+    <h2>Console Method Demos</h2>
     <section id="error-btns">
-      <button>Console Log</button>
-      <button>Console Error</button>
-      <button>Console Count</button>
-      <button>Console Warn</button>
-      <button>Console Assert</button>
-      <button>Console Clear</button>
-      <button>Console Dir</button>
-      <button>Console dirxml</button>
-      <button>Console Group Start</button>
-      <button>Console Group End</button>
-      <button>Console Table</button>
-      <button>Start Timer</button>
-      <button>End Timer</button>
-      <button>Console Trace</button>
-      <button>Trigger a Global Error</button>
+      <button id="btn-log">Console Log</button>
+      <button id="btn-error">Console Error</button>
+      <button id="btn-count">Console Count</button>
+      <button id="btn-warn">Console Warn</button>
+      <button id="btn-assert">Console Assert</button>
+      <button id="btn-clear">Console Clear</button>
+      <button id="btn-dir">Console Dir</button>
+      <button id="btn-dirxml">Console Dirxml</button>
+      <button id="btn-group-start">Console Group Start</button>
+      <button id="btn-group-end">Console Group End</button>
+      <button id="btn-table">Console Table</button>
+      <button id="btn-time-start">Start Timer</button>
+      <button id="btn-time-end">End Timer</button>
+      <button id="btn-trace">Console Trace</button>
+      <button id="btn-global-error">Trigger a Global Error</button>
     </section>
   </main>
 
   <script>
-    let form = document.querySelector('form');
-    form.addEventListener('submit', e => {
+    class ValidationError extends Error {
+      constructor(message) {
+        super(message);
+        this.name = "ValidationError";
+      }
+    }
+
+    class DivisionByZeroError extends Error {
+      constructor() {
+        super("Cannot divide by zero");
+        this.name = "DivisionByZeroError";
+      }
+    }
+
+    const calcForm   = document.getElementById("calc-form");
+    const calcOutput = document.getElementById("calc-output");
+
+    calcForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      let output = document.querySelector('output');
-      let firstNum = document.querySelector('#first-num').value;
-      let secondNum = document.querySelector('#second-num').value;
-      let operator = document.querySelector('#operator').value;
-      output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+      const firstVal  = document.getElementById("first-num").value.trim();
+      const secondVal = document.getElementById("second-num").value.trim();
+      const operator  = document.getElementById("operator").value;
+
+      calcOutput.className = "";
+
+      try {
+        // Validate inputs are not empty
+        if (firstVal === "" || secondVal === "") {
+          throw new ValidationError("Both fields must be filled in.");
+        }
+
+        const a = Number(firstVal);
+        const b = Number(secondVal);
+
+        // Validate inputs are actual numbers
+        if (isNaN(a) || isNaN(b)) {
+          throw new ValidationError("Inputs must be numeric values.");
+        }
+
+        // Guard against division by zero
+        if (operator === "/" && b === 0) {
+          throw new DivisionByZeroError();
+        }
+
+        const result = eval(`${a} ${operator} ${b}`);
+        calcOutput.textContent = result;
+
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          console.warn("Validation problem:", err.message);
+        } else if (err instanceof DivisionByZeroError) {
+          console.error("Math error:", err.message);
+        } else {
+          console.error("Unexpected error:", err);
+        }
+
+        calcOutput.textContent = `⚠ ${err.name}: ${err.message}`;
+        calcOutput.className = "error-output";
+
+      } finally {
+        // Runs whether or not an error occurred
+        console.log("Calculator evaluation attempt finished.");
+      }
     });
 
-    let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
+    window.onerror = function (message, source, lineno, colno, error) {
+      console.log(
+        `[Global Error Handler] Caught an uncaught error!\n` +
+        `  Message : ${message}\n` +
+        `  Source  : ${source}\n` +
+        `  Line    : ${lineno}:${colno}\n` +
+        `  Error   : ${error}`
+      );
+      // In a real app you'd POST this to your logging service here.
+      // TrackJS above picks this up automatically.
+      return true; // prevents the default browser error display
+    };
 
-    // Start your code here
-    // You may move this JS to another file if you wish
+    // Sample data used across demos
+    const sampleUsers = [
+      { id: 1, name: "Alice",   role: "admin",  active: true  },
+      { id: 2, name: "Bob",     role: "editor", active: false },
+      { id: 3, name: "Charlie", role: "viewer", active: true  },
+    ];
+
+    // console.log – print a friendly message with data
+    document.getElementById("btn-log").addEventListener("click", () => {
+      console.log("console.log demo – here are our sample users:", sampleUsers);
+    });
+
+    // console.error – signal something went wrong
+    document.getElementById("btn-error").addEventListener("click", () => {
+      console.error("console.error demo – user #2 is inactive and cannot be edited.");
+    });
+
+    // console.count – track how many times the button is clicked
+    document.getElementById("btn-count").addEventListener("click", () => {
+      console.count("Console Count button clicked");
+    });
+
+    // console.warn – non-fatal but noteworthy
+    document.getElementById("btn-warn").addEventListener("click", () => {
+      console.warn("console.warn demo – the active user list is getting large (>100 users).");
+    });
+
+    // console.assert – only logs if assertion is false
+    document.getElementById("btn-assert").addEventListener("click", () => {
+      const activeCount = sampleUsers.filter(u => u.active).length;
+      console.assert(activeCount > 0, "Assertion failed: there are NO active users!");
+      console.assert(activeCount > 10, "Assertion failed: fewer than 10 active users (expected >10).");
+    });
+
+    // console.clear – wipe the console
+    document.getElementById("btn-clear").addEventListener("click", () => {
+      console.clear();
+    });
+
+    // console.dir – inspect a DOM element's properties
+    document.getElementById("btn-dir").addEventListener("click", () => {
+      console.log("console.dir demo – inspecting the <form> element:");
+      console.dir(calcForm);
+    });
+
+    // console.dirxml – show the XML/HTML tree of a DOM element
+    document.getElementById("btn-dirxml").addEventListener("click", () => {
+      console.log("console.dirxml demo – XML tree of the <form> element:");
+      console.dirxml(calcForm);
+    });
+
+    // console.group / groupCollapsed / groupEnd
+    document.getElementById("btn-group-start").addEventListener("click", () => {
+      console.group("User Report");
+      console.log("Total users :", sampleUsers.length);
+      console.log("Active users:", sampleUsers.filter(u => u.active).length);
+      console.groupCollapsed("Full user list (collapsed)");
+      sampleUsers.forEach(u => console.log(u));
+      console.groupEnd(); // end the collapsed sub-group
+      console.log("(outer group still open — click 'Console Group End' to close it)");
+    });
+
+    document.getElementById("btn-group-end").addEventListener("click", () => {
+      console.groupEnd(); // closes the outer "User Report" group
+    });
+
+    // console.table – nicely formatted table
+    document.getElementById("btn-table").addEventListener("click", () => {
+      console.log("console.table demo:");
+      console.table(sampleUsers);
+    });
+
+    // console.time / timeEnd – measure elapsed time
+    document.getElementById("btn-time-start").addEventListener("click", () => {
+      console.time("sortTimer");
+      console.log("Timer started – click 'End Timer' to stop it.");
+    });
+
+    document.getElementById("btn-time-end").addEventListener("click", () => {
+      // Simulate some work before stopping
+      const sorted = [...sampleUsers].sort((a, b) => a.name.localeCompare(b.name));
+      console.timeEnd("sortTimer");
+      console.log("Sorted result:", sorted);
+    });
+
+    // console.trace – print the call stack
+    document.getElementById("btn-trace").addEventListener("click", () => {
+      function innerFunction() {
+        console.trace("console.trace demo – call stack at this point:");
+      }
+      function outerFunction() {
+        innerFunction();
+      }
+      outerFunction();
+    });
+
+    document.getElementById("btn-global-error").addEventListener("click", () => {
+      // This runs outside a try/catch so window.onerror will catch it.
+      // We call a function that doesn't exist to produce a realistic ReferenceError.
+      setTimeout(() => {
+        nonExistentFunction(); // ReferenceError – caught by window.onerror + TrackJS
+      }, 0);
+    });
   </script>
 </body>
 
